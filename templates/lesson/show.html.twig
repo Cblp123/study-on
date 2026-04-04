@@ -1,0 +1,27 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ lesson.name }}{% endblock %}
+
+{% block body %}
+    <h1>{{ lesson.name }}</h1>
+
+    <p>
+        Курс:
+        <a href="{{ path('app_course_show', {id: lesson.course.id}) }}">
+            {{ lesson.course.name }}
+        </a>
+    </p>
+
+    <div>
+        {{ lesson.content }}
+    </div>
+
+    <br>
+
+    <a href="{{ path('app_lesson_edit', {id: lesson.id}) }}">Редактировать</a>
+
+    <form method="post" action="{{ path('app_lesson_delete', {id: lesson.id}) }}" style="display:inline;">
+        <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ lesson.id) }}">
+        <button>Удалить</button>
+    </form>
+{% endblock %}
