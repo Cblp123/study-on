@@ -9,3 +9,6 @@
 
 controllers:
     resource: routing.controllers
+home:
+    path: /
+    controller: App\Controller\CourseController::index
