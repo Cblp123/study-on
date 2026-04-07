@@ -24,7 +24,7 @@ class Course
     private ?string $name = null;
 
     #[ORM\Column(length: 1000, nullable: true)]
-    private ?string $description = null;
+    private ?string $description   = null;
 
     #[ORM\OneToMany(mappedBy: 'course', targetEntity: Lesson::class, orphanRemoval: true)]
     private Collection $lessons;

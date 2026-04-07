@@ -23,7 +23,7 @@ class Lesson
 
     #[ORM\Column(nullable: true)]
     #[Assert\LessThanOrEqual(10000)]
-    private ?int $orderNumber = null;
+    private ?int $orderNumber =  null;
 
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: false)]
