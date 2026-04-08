@@ -2,6 +2,9 @@ volumes:
     postgres: ~
     composer_cache: ~
     yarn_cache: ~
+    vendor-cache: ~
+    cache-prod: ~
+    node_modules: ~
 services:
     nginx:
         image: nginx:alpine
@@ -29,6 +32,8 @@ services:
         volumes:
             - .:/app
             - composer_cache:/composer-cache
+            - vendor-cache:/app/vendor
+            - cache-prod:/app/var/cache
         environment:
             - COMPOSER_ALLOW_SUPERUSER=1
             - COMPOSER_CACHE_DIR=/composer-cache
@@ -42,3 +47,4 @@ services:
         volumes:
             - .:/app
             - yarn_cache:/yarn
+            - node_modules:/app/node_modules
