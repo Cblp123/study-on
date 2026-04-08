@@ -9,7 +9,7 @@
 
     <h3>Уроки:</h3>
 
-    {% for lesson in course.lessons|sort((a, b) => a.orderNumber <=> b.orderNumber) %}
+    {% for lesson in course.lessons %}
         <div>
             <a href="{{ path('app_lesson_show', {id: lesson.id}) }}">
                 {{ lesson.name }}
