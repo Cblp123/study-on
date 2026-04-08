@@ -6,7 +6,7 @@
     <h1>Курсы</h1>
 
     {% for course in courses %}
-        <div style="margin-bottom: 20px;">
+        <div>
             <h2>
                 <a href="{{ path('app_course_show', {id: course.id}) }}">
                     {{ course.name }}
