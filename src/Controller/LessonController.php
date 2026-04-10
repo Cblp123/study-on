@@ -4,7 +4,6 @@ namespace App\Controller;
 
 use App\Entity\Lesson;
 use App\Form\LessonType;
-use App\Repository\LessonRepository;
 use App\Repository\CourseRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -15,14 +14,6 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/lessons')]
 final class LessonController extends AbstractController
 {
-    #[Route(name: 'app_lesson_index', methods: ['GET'])]
-    public function index(LessonRepository $lessonRepository): Response
-    {
-        return $this->render('lesson/index.html.twig', [
-            'lessons' => $lessonRepository->findAll(),
-        ]);
-    }
-
     #[Route('/new', name: 'app_lesson_new', methods: ['GET', 'POST'])]
     public function new(
         Request $request,
@@ -94,7 +85,7 @@ final class LessonController extends AbstractController
     public function delete(Request $request, Lesson $lesson, EntityManagerInterface $entityManager): Response
     {
         $courseId = $lesson->getCourse()->getId();
-        if ($this->isCsrfTokenValid('delete'.$lesson->getId(), $request->getPayload()->getString('_token'))) {
+        if ($this->isCsrfTokenValid('delete' . $lesson->getId(), $request->getPayload()->getString('_token'))) {
             $entityManager->remove($lesson);
             $entityManager->flush();
         }
