@@ -4,6 +4,8 @@ namespace App\Form;
 
 use App\Entity\Course;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
+use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
@@ -12,9 +14,16 @@ class CourseType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
-            ->add('code')
-            ->add('name')
-            ->add('description')
+            ->add('code', TextType::class, [
+                'attr' => ['maxlength' => 255]
+            ])
+            ->add('name', TextType::class, [
+                'attr' => ['maxlength' => 255]
+            ])
+            ->add('description', TextareaType::class, [
+                'attr' => ['maxlength' => 1000],
+                'required' => false
+            ])
         ;
     }
 
