@@ -16,9 +16,11 @@ class Lesson
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Assert\NotBlank(message: 'Название урока не может быть пустым')]
     private ?string $name = null;
 
     #[ORM\Column(type: Types::TEXT)]
+    #[Assert\NotBlank(message: 'Содержание урока не может быть пустым')]
     private ?string $content = null;
 
     #[ORM\Column(nullable: true)]
