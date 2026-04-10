@@ -15,10 +15,18 @@ class LessonType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
-            ->add('name', TextType::class)
-            ->add('content', TextareaType::class)
+            ->add('name', TextType::class, [
+                'attr' => ['maxlength' => 255]
+            ])
+            ->add('content', TextareaType::class, [
+                'attr' => ['maxlength' => 10000]
+            ])
             ->add('orderNumber', IntegerType::class, [
                 'required' => false,
+                'attr' => [
+                    'max' => 10_000,
+                    'min' => -10_000
+                ]
             ]);
     }
 
