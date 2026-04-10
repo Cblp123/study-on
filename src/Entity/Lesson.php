@@ -22,7 +22,7 @@ class Lesson
     private ?string $content = null;
 
     #[ORM\Column(nullable: true)]
-    #[Assert\LessThanOrEqual(10000)]
+    #[Assert\LessThanOrEqual(10000, message: 'Порядковый номер не может быть больше 10000')]
     private ?int $orderNumber =  null;
 
     #[ORM\ManyToOne]
