@@ -16,13 +16,16 @@ class LessonType extends AbstractType
     {
         $builder
             ->add('name', TextType::class, [
+                'label' => 'Название урока',
                 'attr' => ['maxlength' => 255]
             ])
             ->add('content', TextareaType::class, [
+                'label' => 'Содержимое урока',
                 'attr' => ['maxlength' => 10000]
             ])
             ->add('orderNumber', IntegerType::class, [
                 'required' => false,
+                'label' => 'Порядковый номер урока',
                 'attr' => [
                     'max' => 10_000,
                     'min' => -10_000
