@@ -51,6 +51,7 @@ class LessonControllerTest extends WebTestCase
         $form = $crawler->selectButton('Сохранить')->form([
             'lesson[name]' => 'Новый урок',
             'lesson[content]' => 'Контент урока',
+            'lesson[orderNumber]' => 1,
         ]);
 
         $client->submit($form);
@@ -62,7 +63,7 @@ class LessonControllerTest extends WebTestCase
     }
 
     // Проверка на пустые поля
-    public function testAddLessonValidation(): void
+    public function testAddLessonValidationEmpty(): void
     {
         $client = static::createClient();
         $crawler = $client->request('GET', '/courses');
@@ -73,9 +74,68 @@ class LessonControllerTest extends WebTestCase
         $link = $crawler->selectLink('Добавить урок')->link();
         $crawler = $client->click($link);
 
+        $cases = [
+            ['lesson[name]' => '', 'lesson[content]' => 'test-empty-name'],
+            ['lesson[name]' => 'test-empty-content', 'lesson[content]' => ''],
+        ];
+
+        foreach ($cases as $data) {
+            $form = $crawler->selectButton('Сохранить')->form($data);
+            $crawler = $client->submit($form);
+
+            $this->assertResponseStatusCodeSame(422);
+            $this->assertSelectorExists('.invalid-feedback');
+        }
+    }
+
+    // Проверка на очень длинные значения полей
+    public function testAddLessonValidationLength(): void
+    {
+        $client = static::createClient();
+        $crawler = $client->request('GET', '/courses');
+
+        $link = $crawler->selectLink('Пройти курс')->first()->link();
+        $crawler = $client->click($link);
+
+        $link = $crawler->selectLink('Добавить урок')->link();
+        $crawler = $client->click($link);
+
+        $cases = [
+            ['lesson[name]' => str_repeat('0', 256), 'lesson[content]' => 'test-large-name'],
+            ['lesson[name]' => 'test-large-content', 'lesson[content]' => str_repeat('0', 10_001)],
+            ['lesson[name]' => 'test-large-order', 'lesson[content]' => 'test-large-order',
+                'lesson[orderNumber]' => 10_001],
+            ['lesson[name]' => 'test-short-order', 'lesson[content]' => 'test-short-order',
+                'lesson[orderNumber]' => -10_001],
+        ];
+
+        foreach ($cases as $data) {
+            $form = $crawler->selectButton('Сохранить')->form($data);
+            $crawler = $client->submit($form);
+
+            $this->assertResponseStatusCodeSame(422);
+            $this->assertSelectorExists('.invalid-feedback');
+        }
+    }
+
+    // Проверка числового типа поля orderNumber
+    public function testAddLessonValidationIntegerType(): void
+    {
+        $client = static::createClient();
+        $crawler = $client->request('GET', '/courses');
+
+        $link = $crawler->selectLink('Пройти курс')->first()->link();
+        $crawler = $client->click($link);
+
+        $link = $crawler->selectLink('Добавить урок')->link();
+        $crawler = $client->click($link);
+
+        $this->assertResponseIsSuccessful();
+
         $form = $crawler->selectButton('Сохранить')->form([
-            'lesson[name]' => '',
-            'lesson[content]' => '',
+            'lesson[name]' => 'test-strigtype-order',
+            'lesson[content]' => 'test-strigtype-order',
+            'lesson[orderNumber]' => 'invalid-order-number',
         ]);
 
         $crawler = $client->submit($form);
