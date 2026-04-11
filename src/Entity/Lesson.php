@@ -17,14 +17,17 @@ class Lesson
 
     #[ORM\Column(length: 255)]
     #[Assert\NotBlank(message: 'Название урока не может быть пустым')]
+    #[Assert\Length(max: 255, maxMessage: 'Название урока не может быть длиннее 255 символов')]
     private ?string $name = null;
 
     #[ORM\Column(type: Types::TEXT)]
-    #[Assert\NotBlank(message: 'Содержание урока не может быть пустым')]
+    #[Assert\NotBlank(message: 'Содержимое урока не может быть пустым')]
+    #[Assert\Length(max: 255, maxMessage: 'Содержимое урока не может быть длинее 10 000 символов')]
     private ?string $content = null;
 
     #[ORM\Column(nullable: true)]
     #[Assert\LessThanOrEqual(10000, message: 'Порядковый номер не может быть больше 10000')]
+    #[Assert\GreaterThanOrEqual(-10000, message: 'Порядковый номер не может быть меньше -10000')]
     private ?int $orderNumber =  null;
 
     #[ORM\ManyToOne]

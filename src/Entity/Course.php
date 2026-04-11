@@ -20,13 +20,16 @@ class Course
 
     #[ORM\Column(length: 255, unique: true)]
     #[Assert\NotBlank(message: 'Код не может быть пустым')]
+    #[Assert\Length(max: 255, maxMessage: 'Код не может быть длиннее 255 символов')]
     private ?string $code = null;
 
     #[ORM\Column(length: 255)]
     #[Assert\NotBlank(message: 'Название курса не может быть пустым')]
+    #[Assert\Length(max: 255, maxMessage: 'Название не может быть длиннее 255 символов')]
     private ?string $name = null;
 
     #[ORM\Column(length: 1000, nullable: true)]
+    #[Assert\Length(max: 1000, maxMessage: 'Описание не может быть длиннее 1000 символов')]
     private ?string $description   = null;
 
     #[ORM\OneToMany(mappedBy: 'course', targetEntity: Lesson::class, orphanRemoval: true)]
