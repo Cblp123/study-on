@@ -63,15 +63,45 @@ class CourseControllerTest extends WebTestCase
     }
 
     // Проверка на пустые поля
-    public function testCreateCourseValidation(): void
+    public function testCreateCourseValidationEmpty(): void
     {
         $client = static::createClient();
         $crawler = $client->request('GET', '/courses/new');
 
-        $form = $crawler->selectButton('Сохранить')->form([
-            'course[code]' => '',
-            'course[name]' => '',
-        ]);
+        $cases = [
+            ['course[code]' => '', 'course[name]' => 'test-empty-code'],
+            ['course[code]' => 'test-empty-name', 'course[name]' => ''],
+        ];
+
+        foreach ($cases as $data) {
+            $form = $crawler->selectButton('Сохранить')->form($data);
+            $crawler = $client->submit($form);
+
+            $this->assertResponseStatusCodeSame(422);
+            $this->assertSelectorExists('.invalid-feedback');
+        }
+    }
+
+    // Проверка на очень длинные значения полей
+    public function testCreateCourseValidationLength(): void
+    {
+        $client = static::createClient();
+        $crawler = $client->request('GET', '/courses/new');
+
+        $cases = [
+            ['course[code]' => str_repeat('0', 256), 'course[name]' => 'test-large-code'],
+            ['course[code]' => 'test-large-name', 'course[name]' => str_repeat('0', 256)],
+            ['course[code]' => 'test-large-description', 'course[name]' => 'test-large-description',
+                'course[description]' => str_repeat('0', 1001)],
+        ];
+
+        foreach ($cases as $data) {
+            $form = $crawler->selectButton('Сохранить')->form($data);
+            $crawler = $client->submit($form);
+
+            $this->assertResponseStatusCodeSame(422);
+            $this->assertSelectorExists('.invalid-feedback');
+        }
 
         $crawler = $client->submit($form);
         $this->assertResponseStatusCodeSame(422);
