@@ -22,7 +22,7 @@ class Lesson
 
     #[ORM\Column(type: Types::TEXT)]
     #[Assert\NotBlank(message: 'Содержимое урока не может быть пустым')]
-    #[Assert\Length(max: 255, maxMessage: 'Содержимое урока не может быть длинее 10 000 символов')]
+    #[Assert\Length(max: 10_000, maxMessage: 'Содержимое урока не может быть длинее 10 000 символов')]
     private ?string $content = null;
 
     #[ORM\Column(nullable: true)]
