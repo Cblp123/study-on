@@ -62,6 +62,25 @@ class CourseControllerTest extends WebTestCase
         $this->assertSelectorTextContains('p', 'Описание');
     }
 
+    // Проверка на уникальность кода курса
+    public function testCreateCourseValidationUniqueCode(): void
+    {
+        $client = static::createClient();
+        $crawler = $client->request('GET', '/courses/new');
+
+        $cases = [
+            ['course[code]' => 'python-basa', 'course[name]' => 'test-empty-code']
+        ];
+
+        foreach ($cases as $data) {
+            $form = $crawler->selectButton('Сохранить')->form($data);
+            $crawler = $client->submit($form);
+
+            $this->assertResponseStatusCodeSame(422);
+            $this->assertSelectorExists('.invalid-feedback');
+        }
+    }
+
     // Проверка на пустые поля
     public function testCreateCourseValidationEmpty(): void
     {
