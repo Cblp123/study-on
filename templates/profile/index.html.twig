@@ -1,0 +1,30 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Профиль{% endblock %}
+
+{% block body %}
+    <div class="container mt-4" >
+        <h2 class="mb-4">Профиль</h2>
+
+        {% for message in app.flashes('error') %}
+            <div class="alert alert-danger">{{ message }}</div>
+        {% endfor %}
+
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+                <strong>Email:</strong> {{ email }}
+            </li>
+            <li class="list-group-item">
+                <strong>Роль:</strong> {{ role }}
+            </li>
+            <li class="list-group-item">
+                <strong>Баланс:</strong>
+                {% if balance is not null %}
+                    {{ balance }} ₽
+                {% else %}
+                    нет данных
+                {% endif %}
+            </li>
+        </ul>
+    </div>
+{% endblock %}
