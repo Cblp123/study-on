@@ -59,7 +59,7 @@ class BillingClient
     public function register(string $email, string $password): array
     {
         return $this->request('POST', '/api/v1/register', [
-            'username' => $email,
+            'email' => $email,
             'password' => $password,
         ]);
     }
