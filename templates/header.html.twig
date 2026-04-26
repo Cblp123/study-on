@@ -1,5 +1,22 @@
 <nav class="navbar navbar-light bg-light mb-4">
         <div class="container-fluid fw-bold">
             <a class="navbar-brand" href="/">StudyOn</a>
+            <div class="d-flex align-items-center gap-2">
+                {% if is_granted('IS_AUTHENTICATED_FULLY') %}
+                    <a href="{{ path('app_profile') }}" class="btn btn-outline-secondary btn-sm">
+                        {{ app.user.email }}
+                    </a>
+                    <a href="{{ path('app_logout') }}" class="btn btn-outline-danger btn-sm">
+                        Выйти
+                    </a>
+                {% else %}
+                    <a href="{{ path('app_login') }}" class="btn btn-outline-primary btn-sm">
+                        Войти
+                    </a>
+                    <a href="{{ path('app_register') }}" class="btn btn-primary btn-sm">
+                       Регистрация
+                    </a>
+                {% endif %}
+            </div>
         </div>
 </nav>
