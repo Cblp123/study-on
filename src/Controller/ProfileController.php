@@ -24,7 +24,7 @@ final class ProfileController extends AbstractController
             $this->addFlash('error', 'Сервис сейчас не доступен.');
         }
 
-        $role = in_array('ROLE_SUPER_ADMIN', $user->getRoles()) ? "Администратор" : "Пользователь";
+        $role = in_array('ROLE_SUPER_ADMIN', $user->getRoles(), true) ? "Администратор" : "Пользователь";
         return $this->render('profile/index.html.twig', [
             'email'   => $user->getEmail(),
             'role'    => $role,
