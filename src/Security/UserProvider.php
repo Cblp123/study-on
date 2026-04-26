@@ -2,6 +2,8 @@
 
 namespace App\Security;
 
+use App\Exception\BillingUnavailableException;
+use App\Service\BillingClient;
 use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
 use Symfony\Component\Security\Core\Exception\UserNotFoundException;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
@@ -11,6 +13,10 @@ use Symfony\Component\Security\Core\User\UserProviderInterface;
 
 class UserProvider implements UserProviderInterface, PasswordUpgraderInterface
 {
+    public function __construct(private BillingClient $billingClient)
+    {
+    }
+
     /**
      * Symfony calls this method if you use features like switch_user
      * or remember_me.
@@ -18,12 +24,17 @@ class UserProvider implements UserProviderInterface, PasswordUpgraderInterface
      * If you're not using these features, you do not need to implement
      * this method.
      *
-     * @throws UserNotFoundException if the user is not found
+     * @throws BillingUnavailableException
      */
     public function loadUserByIdentifier($identifier): UserInterface
     {
+        $userData = $this->billingClient->getCurrentUser($identifier);
+
         $user = new User();
-        $user->setEmail($identifier);
+        $user->setEmail($userData['username']);
+        $user->setRoles($userData['roles']);
+        $user->setBalance($userData['balance']);
+        $user->setApiToken($identifier);
 
         return $user;
     }

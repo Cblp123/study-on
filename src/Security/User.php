@@ -35,7 +35,7 @@ class User implements UserInterface
      */
     public function getUserIdentifier(): string
     {
-        return (string) $this->email;
+        return (string) $this->apiToken;
     }
 
     /**
