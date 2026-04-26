@@ -21,8 +21,10 @@
 
     <div class="d-flex gap-2">
         <a href="{{ path('app_course_index') }}" class="btn btn-outline-secondary">К списку курсов</a>
+        {% if is_granted('ROLE_SUPER_ADMIN') %}
         <a href="{{ path('app_course_edit', {id: course.id}) }}" class="btn btn-secondary">Редактировать</a>
         {{ include('course/_delete_form.html.twig') }}
         <a href="{{ path('app_lesson_new', {course_id: course.id}) }}" class="btn btn-outline-secondary">Добавить урок</a>
+        {% endif %}
     </div>
 {% endblock %}

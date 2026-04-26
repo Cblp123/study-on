@@ -21,5 +21,7 @@
         {% endfor %}
     </div>
     <hr>
+    {% if is_granted('ROLE_SUPER_ADMIN') %}
     <a href="{{ path('app_course_new') }}" class="btn btn-outline-secondary">Добавить курс</a>
+    {% endif %}
 {% endblock %}
