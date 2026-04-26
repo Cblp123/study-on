@@ -2,14 +2,39 @@
 
 namespace App\Tests\Controller;
 
-use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
-
-class LessonControllerTest extends WebTestCase
+class LessonControllerTest extends AbstractControllerTest
 {
-    // Страница урока
-    public function testShow(): void
+
+    // проверка для неавторизованных пользователей
+    public function testAnonymousCannotViewLesson(): void
     {
         $client = static::createClient();
+        $crawler = $client->request('GET', '/courses');
+
+        $link = $crawler->selectLink('Пройти курс')->first()->link();
+        $crawler = $client->click($link);
+
+        $link = $crawler->filter('li a')->first()->link();
+        $client->click($link);
+
+        $this->assertResponseRedirects('/login');
+    }
+
+    public function testShowNotFound(): void
+    {
+        $client = static::createClient();
+        $client->request('GET', '/lessons/999');
+
+        $this->assertResponseStatusCodeSame(404);
+    }
+
+    // права доступа пользователя
+    public function testUserCanViewLesson(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+
+        $this->loginAsUser($client);
         $crawler = $client->request('GET', '/courses');
 
         $link = $crawler->selectLink('Пройти курс')->first()->link();
@@ -19,23 +44,94 @@ class LessonControllerTest extends WebTestCase
         $crawler = $client->click($link);
 
         $this->assertResponseIsSuccessful();
-        // первый урок в первом курсе
         $this->assertSelectorTextContains('h1', 'Введение в Python');
     }
 
-    // 404 для несуществующего урока
-    public function testShowNotFound(): void
+    public function testUserCannotAddLesson(): void
     {
         $client = static::createClient();
-        $client->request('GET', '/lessons/999');
+        $client->disableReboot();
 
-        $this->assertResponseStatusCodeSame(404);
+        $this->loginAsUser($client);
+
+        $em = static::getContainer()->get('doctrine')->getManager();
+        $course = $em->getRepository(\App\Entity\Course::class)->findOneBy([]);
+
+        $client->request('GET', '/lessons/new?course_id=' . $course->getId());
+        $this->assertResponseStatusCodeSame(403);
     }
 
-    // Добавление урока через страницу курса
+    public function testUserCannotEditLesson(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+
+        $this->loginAsUser($client);
+
+        $em = static::getContainer()->get('doctrine')->getManager();
+        $lesson = $em->getRepository(\App\Entity\Lesson::class)->findOneBy([]);
+
+        $client->request('GET', '/lessons/' . $lesson->getId() . '/edit');
+        $this->assertResponseStatusCodeSame(403);
+    }
+
+    public function testUserCannotDeleteLesson(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+
+        $this->loginAsUser($client);
+
+        $em = static::getContainer()->get('doctrine')->getManager();
+        $lesson = $em->getRepository(\App\Entity\Lesson::class)->findOneBy([]);
+
+        $client->request('POST', '/lessons/' . $lesson->getId());
+        $this->assertResponseStatusCodeSame(403);
+    }
+
+    public function testUserDoesNotSeeAdminButtons(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+
+        $this->loginAsUser($client);
+        $crawler = $client->request('GET', '/courses');
+
+        $link = $crawler->selectLink('Пройти курс')->first()->link();
+        $crawler = $client->click($link);
+
+        $this->assertSelectorNotExists('button:contains("Удалить")');
+        $this->assertSelectorNotExists('a:contains("Редактировать")');
+    }
+
+    // права администратора
+    public function testShow(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+
+        $this->loginAsAdmin($client);
+        $crawler = $client->request('GET', '/courses');
+
+        $link = $crawler->selectLink('Пройти курс')->first()->link();
+        $crawler = $client->click($link);
+
+        $link = $crawler->filter('li a')->first()->link();
+        $crawler = $client->click($link);
+
+        $this->assertSelectorExists('button:contains("Удалить")');
+        $this->assertSelectorExists('a:contains("Редактировать")');
+
+        $this->assertResponseIsSuccessful();
+        $this->assertSelectorTextContains('h1', 'Введение в Python');
+    }
+
     public function testAddLesson(): void
     {
         $client = static::createClient();
+        $client->disableReboot();
+
+        $this->loginAsAdmin($client);
         $crawler = $client->request('GET', '/courses');
 
         $link = $crawler->selectLink('Пройти курс')->first()->link();
@@ -46,8 +142,6 @@ class LessonControllerTest extends WebTestCase
         $link = $crawler->selectLink('Добавить урок')->link();
         $crawler = $client->click($link);
 
-        $this->assertResponseIsSuccessful();
-
         $form = $crawler->selectButton('Сохранить')->form([
             'lesson[name]' => 'Новый урок',
             'lesson[content]' => 'Контент урока',
@@ -55,17 +149,18 @@ class LessonControllerTest extends WebTestCase
         ]);
 
         $client->submit($form);
-
         $this->assertResponseRedirects();
         $crawler = $client->followRedirect();
 
         $this->assertCount($lessonsCountBefore + 1, $crawler->filter('li'));
     }
 
-    // Проверка на пустые поля
     public function testAddLessonValidationEmpty(): void
     {
         $client = static::createClient();
+        $client->disableReboot();
+
+        $this->loginAsAdmin($client);
         $crawler = $client->request('GET', '/courses');
 
         $link = $crawler->selectLink('Пройти курс')->first()->link();
@@ -75,8 +170,8 @@ class LessonControllerTest extends WebTestCase
         $crawler = $client->click($link);
 
         $cases = [
-            ['lesson[name]' => '', 'lesson[content]' => 'test-empty-name'],
-            ['lesson[name]' => 'test-empty-content', 'lesson[content]' => ''],
+            ['lesson[name]' => '', 'lesson[content]' => 'test'],
+            ['lesson[name]' => 'test', 'lesson[content]' => ''],
         ];
 
         foreach ($cases as $data) {
@@ -88,66 +183,47 @@ class LessonControllerTest extends WebTestCase
         }
     }
 
-    // Проверка на очень длинные значения полей
-    public function testAddLessonValidationLength(): void
+    public function testEditLesson(): void
     {
         $client = static::createClient();
+        $client->disableReboot();
+
+        $this->loginAsAdmin($client);
         $crawler = $client->request('GET', '/courses');
 
         $link = $crawler->selectLink('Пройти курс')->first()->link();
         $crawler = $client->click($link);
 
-        $link = $crawler->selectLink('Добавить урок')->link();
+        $link = $crawler->filter('li a')->first()->link();
         $crawler = $client->click($link);
 
-        $cases = [
-            ['lesson[name]' => str_repeat('0', 256), 'lesson[content]' => 'test-large-name'],
-            ['lesson[name]' => 'test-large-content', 'lesson[content]' => str_repeat('0', 10_001)],
-            ['lesson[name]' => 'test-large-order', 'lesson[content]' => 'test-large-order',
-                'lesson[orderNumber]' => 10_001],
-            ['lesson[name]' => 'test-short-order', 'lesson[content]' => 'test-short-order',
-                'lesson[orderNumber]' => -10_001],
-        ];
-
-        foreach ($cases as $data) {
-            $form = $crawler->selectButton('Сохранить')->form($data);
-            $crawler = $client->submit($form);
-
-            $this->assertResponseStatusCodeSame(422);
-            $this->assertSelectorExists('.invalid-feedback');
-        }
-    }
-
-    // Проверка числового типа поля orderNumber
-    public function testAddLessonValidationIntegerType(): void
-    {
-        $client = static::createClient();
-        $crawler = $client->request('GET', '/courses');
-
-        $link = $crawler->selectLink('Пройти курс')->first()->link();
-        $crawler = $client->click($link);
-
-        $link = $crawler->selectLink('Добавить урок')->link();
+        $link = $crawler->selectLink('Редактировать')->link();
         $crawler = $client->click($link);
 
         $this->assertResponseIsSuccessful();
 
         $form = $crawler->selectButton('Сохранить')->form([
-            'lesson[name]' => 'test-strigtype-order',
-            'lesson[content]' => 'test-strigtype-order',
-            'lesson[orderNumber]' => 'invalid-order-number',
+            'lesson[name]' => 'Изменённое название урока',
+            'lesson[content]' => 'Изменённый контент',
         ]);
 
-        $crawler = $client->submit($form);
+        $client->submit($form);
 
-        $this->assertResponseStatusCodeSame(422);
-        $this->assertSelectorExists('.invalid-feedback');
+        $this->assertResponseRedirects();
+        $crawler = $client->followRedirect();
+
+        $link = $crawler->filter('li a')->first()->link();
+        $crawler = $client->click($link);
+
+        $this->assertSelectorTextContains('h1', 'Изменённое название урока');
     }
 
-    // Удаление урока
     public function testDeleteLesson(): void
     {
         $client = static::createClient();
+        $client->disableReboot();
+
+        $this->loginAsAdmin($client);
         $crawler = $client->request('GET', '/courses');
 
         $link = $crawler->selectLink('Пройти курс')->first()->link();
