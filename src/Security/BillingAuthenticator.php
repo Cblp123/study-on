@@ -2,6 +2,7 @@
 
 namespace App\Security;
 
+use App\Dto\RegisterUserDto;
 use App\Exception\BillingUnavailableException;
 use App\Service\BillingClient;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -17,6 +18,7 @@ use Symfony\Component\Security\Http\Authenticator\Passport\Badge\UserBadge;
 use Symfony\Component\Security\Http\Authenticator\Passport\Passport;
 use Symfony\Component\Security\Http\Authenticator\Passport\SelfValidatingPassport;
 use Symfony\Component\Security\Http\Util\TargetPathTrait;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class BillingAuthenticator extends AbstractLoginFormAuthenticator
 {
@@ -24,12 +26,28 @@ class BillingAuthenticator extends AbstractLoginFormAuthenticator
 
     public const LOGIN_ROUTE = 'app_login';
 
-    public function __construct(private RouterInterface $router, private BillingClient $billingClient)
-    {
+    public function __construct(
+        private RouterInterface $router,
+        private BillingClient $billingClient,
+        private ValidatorInterface $validator
+    ) {
     }
 
     public function authenticate(Request $request): Passport
     {
+        $email = $request->request->get('email', '');
+        $password = $request->request->get('password', '');
+
+        $dto = new RegisterUserDto();
+        $dto->email = $email;
+        $dto->password = $password;
+
+        $errors = $this->validator->validate($dto);
+        if (count($errors) > 0) {
+            throw new CustomUserMessageAuthenticationException(
+                $errors[0]->getMessage()
+            );
+        }
         $email = $request->request->get('email', '');
         $password = $request->request->get('password', '');
 
