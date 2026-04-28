@@ -69,8 +69,9 @@ class BillingAuthenticator extends AbstractLoginFormAuthenticator
         }
 
         $token = $response['token'];
+        $refreshToken = $response['refresh_token'];
 
-        $userLoader = function () use ($token): User {
+        $userLoader = function () use ($token, $refreshToken): User {
             try {
                 $userData = $this->billingClient->getCurrentUser($token);
             } catch (BillingUnavailableException $e) {
@@ -84,12 +85,13 @@ class BillingAuthenticator extends AbstractLoginFormAuthenticator
             $user->setRoles($userData['roles']);
             $user->setBalance($userData['balance']);
             $user->setApiToken($token);
+            $user->setRefreshToken($refreshToken);
 
             return $user;
         };
 
         return new SelfValidatingPassport(
-            new UserBadge($token, $userLoader),
+            new UserBadge($email, $userLoader),
             [
                 new CsrfTokenBadge('authenticate', $request->request->get('_csrf_token')),
                 new RememberMeBadge(),
