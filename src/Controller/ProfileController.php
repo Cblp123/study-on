@@ -19,16 +19,16 @@ final class ProfileController extends AbstractController
         $balance = null;
 
         try {
-            $balance = $billingClient->getCurrentUser($user->getApiToken())['balance'];
+            $response = $billingClient->getCurrentUser($user->getApiToken());
         } catch (BillingUnavailableException $e) {
             $this->addFlash('error', 'Сервис сейчас не доступен.');
         }
 
-        $role = in_array('ROLE_SUPER_ADMIN', $user->getRoles(), true) ? "Администратор" : "Пользователь";
+        $role = in_array('ROLE_SUPER_ADMIN', $response['roles'], true) ? "Администратор" : "Пользователь";
         return $this->render('profile/index.html.twig', [
             'email'   => $user->getEmail(),
             'role'    => $role,
-            'balance' => $balance,
+            'balance' => $response['balance'],
         ]);
     }
 }
