@@ -71,4 +71,27 @@ class BillingClient
     {
         return $this->request('GET', '/api/v1/users/current', token: $token);
     }
+
+    /**
+     * @throws BillingUnavailableException
+     */
+    public function refreshToken(string $refreshToken): array
+    {
+        $ch = curl_init($this->billingUrl . '/api/v1/token/refresh');
+
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/x-www-form-urlencoded']);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query(['refresh_token' => $refreshToken]));
+
+        $response = curl_exec($ch);
+
+        if (curl_errno($ch)) {
+            throw new BillingUnavailableException();
+        }
+
+        curl_close($ch);
+
+        return json_decode($response, true);
+    }
 }
