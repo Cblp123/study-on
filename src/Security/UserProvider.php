@@ -4,6 +4,8 @@ namespace App\Security;
 
 use App\Exception\BillingUnavailableException;
 use App\Service\BillingClient;
+use App\Service\JWTDecoder;
+use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
 use Symfony\Component\Security\Core\Exception\UserNotFoundException;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
@@ -13,8 +15,11 @@ use Symfony\Component\Security\Core\User\UserProviderInterface;
 
 class UserProvider implements UserProviderInterface, PasswordUpgraderInterface
 {
-    public function __construct(private BillingClient $billingClient)
-    {
+    public function __construct(
+        private BillingClient $billingClient,
+        private JWTDecoder $jwtDecoder,
+        private RequestStack $requestStack
+    ) {
     }
 
     /**
@@ -28,13 +33,42 @@ class UserProvider implements UserProviderInterface, PasswordUpgraderInterface
      */
     public function loadUserByIdentifier($identifier): UserInterface
     {
-        $userData = $this->billingClient->getCurrentUser($identifier);
+        $request = $this->requestStack->getCurrentRequest();
+        $refreshToken = $request?->cookies->get('refresh_token');
+
+        if (!$refreshToken) {
+            throw new UserNotFoundException('Refresh token не найден.');
+        }
+
+        try {
+            $response = $this->billingClient->refreshToken($refreshToken);
+        } catch (BillingUnavailableException $e) {
+            throw new UserNotFoundException('Сервис временно недоступен.');
+        }
+
+        if (isset($response['code'])) {
+            throw new UserNotFoundException($response['message'] ?? 'Ошибка обновления токена.');
+        }
+
+        $newApiToken = $response['token'];
+        $refreshToken = $response['refresh_token'];
+
+        try {
+            $userData = $this->billingClient->getCurrentUser($newApiToken);
+        } catch (BillingUnavailableException $e) {
+            throw new UserNotFoundException('Сервис временно недоступен.');
+        }
+
+        if ($identifier !== $userData['user_name']) {
+            throw new UserNotFoundException('Токен принадлежит другому пользователю');
+        }
 
         $user = new User();
         $user->setEmail($userData['username']);
         $user->setRoles($userData['roles']);
         $user->setBalance($userData['balance']);
-        $user->setApiToken($identifier);
+        $user->setApiToken($newApiToken);
+        $user->setRefreshToken($refreshToken);
 
         return $user;
     }
@@ -63,6 +97,23 @@ class UserProvider implements UserProviderInterface, PasswordUpgraderInterface
         if (!$user instanceof User) {
             throw new UnsupportedUserException(sprintf('Invalid user class "%s".', $user::class));
         }
+
+        if (!$this->jwtDecoder->isExpired($user->getApiToken())) {
+            return $user;
+        }
+
+        try {
+            $response = $this->billingClient->refreshToken($user->getRefreshToken());
+        } catch (BillingUnavailableException $e) {
+            return $user;
+        }
+
+        if (isset($response['code'])) {
+            throw new UserNotFoundException('Сессия истекла, войдите снова.');
+        }
+
+        $user->setApiToken($response['token']);
+        $user->setRefreshToken($response['refresh_token']);
 
         // Return a User object after making sure its data is "fresh".
         // Or throw a UsernameNotFoundException if the user no longer exists.
