@@ -94,4 +94,42 @@ class BillingClient
 
         return json_decode($response, true);
     }
+
+    /**
+     * @throws BillingUnavailableException
+     */
+    public function getCourses(): array
+    {
+        return $this->request('GET', '/api/v1/courses');
+    }
+
+    /**
+     * @throws BillingUnavailableException
+     */
+    public function getCourse(string $code): array
+    {
+        return $this->request('GET', '/api/v1/courses/' . $code);
+    }
+
+    /**
+     * @throws BillingUnavailableException
+     */
+    public function payCourse(string $code, string $token): array
+    {
+        return $this->request('POST', '/api/v1/courses/' . $code . '/pay', token: $token);
+    }
+
+    /**
+     * @throws BillingUnavailableException
+     */
+    public function getTransactions(string $token, array $filters = []): array
+    {
+        $query = http_build_query($filters);
+
+        return $this->request(
+            'GET',
+            '/api/v1/transactions?' . $query,
+            token: $token
+        );
+    }
 }
