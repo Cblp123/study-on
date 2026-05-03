@@ -242,4 +242,101 @@ class CourseControllerTest extends AbstractControllerTest
         $crawler = $client->followRedirect();
         $this->assertCount(2, $crawler->filter('.card'));
     }
+
+    public function testAuthorizedUserSeesPriceOnCourseList(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+
+        $this->loginAsUser($client);
+        $crawler = $client->request('GET', '/courses');
+
+        $this->assertResponseIsSuccessful();
+
+        $this->assertSelectorTextContains('body', '100.00');
+        $this->assertSelectorTextContains('body', '200.00');
+    }
+
+    public function testUserSeesFreeCourseLabel(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+
+        $this->loginAsUser($client);
+        $crawler = $client->request('GET', '/courses');
+
+        $this->assertResponseIsSuccessful();
+        $this->assertSelectorTextContains('body', 'Бесплатно');
+    }
+
+    public function testAnonymousCannotPayCourse(): void
+    {
+        $client = static::createClient();
+        $client->request('GET', '/courses/1/pay');
+
+        $this->assertResponseRedirects('/login');
+    }
+
+    public function testPayCourseNotFound(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+
+        $this->loginAsUser($client);
+        $client->request('GET', '/courses/999/pay');
+
+        $this->assertResponseStatusCodeSame(404);
+    }
+
+    public function testUserCanSeeCoursePaymentButton(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+
+        $this->loginAsTestUser($client);
+        $crawler = $client->request('GET', '/courses');
+
+        $this->assertResponseIsSuccessful();
+        // Пользователь видит цены
+        $this->assertSelectorTextContains('body', '100.00');
+        $this->assertSelectorTextContains('body', '200.00');
+    }
+
+    public function testAdminClicksOnRentCourseAndSeesPaymentButton(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+
+        $this->loginAsTestUser($client);
+        $crawler = $client->request('GET', '/courses');
+
+        $links = $crawler->selectLink('Пройти курс');
+
+        $courseLink = $links->eq(1)->link();
+        $crawler = $client->click($courseLink);
+
+        $this->assertResponseIsSuccessful();
+        $this->assertSelectorExists('button[data-bs-toggle="modal"]');
+    }
+
+    public function testUserSeesPaymentConfirmationModal(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+
+        $this->loginAsTestUser($client);
+        $crawler = $client->request('GET', '/courses');
+
+        $links = $crawler->selectLink('Пройти курс');
+
+        $courseLink = $links->eq(1)->link();
+        $crawler = $client->click($courseLink);
+
+        $this->assertResponseIsSuccessful();
+
+        $this->assertSelectorExists('#payModal');
+        $this->assertSelectorTextContains('#payModal', 'Подтверждение оплаты');
+        $this->assertSelectorTextContains('#payModal', 'Списать');
+        $this->assertSelectorExists('#payModal .btn-primary');
+    }
 }

@@ -242,4 +242,78 @@ class LessonControllerTest extends AbstractControllerTest
 
         $this->assertCount($lessonsCountBefore - 1, $crawler->filter('li'));
     }
+
+    public function testUserCanAccessLessonInPaidCourse(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+
+        $this->loginAsUser($client);
+
+        $crawler = $client->request('GET', '/courses');
+        $this->assertResponseIsSuccessful();
+
+        $link = $crawler->selectLink('Пройти курс')->first()->link();
+        $crawler = $client->click($link);
+        $this->assertResponseIsSuccessful();
+
+        $this->assertSelectorExists('h1');
+
+        $lessonLink = $crawler->filter('li a')->first()->link();
+        $crawler = $client->click($lessonLink);
+
+        $this->assertResponseIsSuccessful();
+        $this->assertSelectorExists('h1');
+    }
+
+    public function testUserCannotAccessLessonInUnpaidCourse(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+
+        $this->loginAsAdmin($client);
+
+        $crawler = $client->request('GET', '/courses');
+        $this->assertResponseIsSuccessful();
+
+        $links = $crawler->selectLink('Пройти курс');
+
+        $courseLink = $links->eq(2)->link();
+        $crawler = $client->click($courseLink);
+        $this->assertResponseIsSuccessful();
+
+        $this->assertSelectorExists('h1');
+
+        $lessonLinks = $crawler->filter('li a');
+        $lessonLink = $lessonLinks->first()->link();
+        $client->click($lessonLink);
+
+        $this->assertResponseStatusCodeSame(403);
+
+    }
+
+    public function testUserCanAccessRentedCourseLesson(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+
+        $this->loginAsUser($client);
+
+        $crawler = $client->request('GET', '/courses');
+        $this->assertResponseIsSuccessful();
+
+        $links = $crawler->selectLink('Пройти курс');
+
+        if (count($links) >= 2) {
+            $courseLink = $links->eq(1)->link();
+            $crawler = $client->click($courseLink);
+            $this->assertResponseIsSuccessful();
+
+            $lessonLink = $crawler->filter('li a')->first()->link();
+            $crawler = $client->click($lessonLink);
+
+            $this->assertResponseIsSuccessful();
+            $this->assertSelectorExists('h1');
+        }
+    }
 }
