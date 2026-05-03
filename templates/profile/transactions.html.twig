@@ -1,0 +1,54 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}История транзакций{% endblock %}
+
+{% block body %}
+    <div class="container mt-4">
+        <h2 class="mb-4">История транзакций</h2>
+
+        {% for message in app.flashes('error') %}
+            <div class="alert alert-danger">{{ message }}</div>
+        {% endfor %}
+
+        {% if transactions is empty %}
+            <p>Транзакций пока нет</p>
+        {% else %}
+            <table class="table table-striped">
+                <thead>
+                <tr>
+                    <th>Номер</th>
+                    <th>Тип</th>
+                    <th>Сумма</th>
+                    <th>Курс</th>
+                    <th>Дата</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for t in transactions %}
+                    <tr>
+                        <td>{{ t.id }}</td>
+                        <td>
+                            {% if t.type == 'deposit' %}
+                                <span class="badge bg-success">Пополнение</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Списание</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ t.amount }} ₽</td>
+                        <td>
+                            {% if t.course_code is defined and t.course_code %}
+                                <a href="{{ path('app_course_show', {id: t['course_id']}) }}">{{ t.course_code }}</a>
+                            {% else %}
+
+                            {% endif %}
+                        </td>
+                        <td>{{ t.created_at|date('d.m.Y H:i', 'Europe/Moscow') }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+
+        <a href="{{ path('app_profile') }}" class="btn btn-outline-secondary mt-2">Назад</a>
+    </div>
+{% endblock %}
