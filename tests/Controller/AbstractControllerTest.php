@@ -26,4 +26,9 @@ abstract class AbstractControllerTest extends WebTestCase
     {
         $this->loginAs($client, 'admin@example.com', 'password');
     }
+
+    protected function loginAsTestUser(KernelBrowser $client): void
+    {
+        $this->loginAs($client, 'testuser@example.com', 'password');
+    }
 }
