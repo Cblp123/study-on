@@ -6,13 +6,38 @@
     <p class="h1">Курсы</p>
 
     <div class="row row-cols-md-3 g-4 mb-3">
-        {% for course in courses %}
+        {% for item in coursesData %}
+            {% set course = item.course %}
+            {% set billing = item.billing %}
+            {% set transaction = item.transaction %}
+
             <div class="col">
                 <div class="card h-100">
                     <div class="card-body">
                         <h2 class="card-title">{{ course.name }}</h2>
                         <p class="card-text">{{ course.description }}</p>
-                        <a class="card-link link-underline link-underline-opacity-0" href="{{ path('app_course_show', {id: course.id}) }}">Пройти курс</a>
+
+                        {% if billing and billing.type != 'free' %}
+                            <p class="card-text text-muted">{{ billing.price }} ₽</p>
+                        {% else %}
+                            <p class="card-text text-success fw-bold">Бесплатно</p>
+                        {% endif %}
+
+                        {% if app.user and billing and billing.type != 'free' %}
+                            {% if transaction %}
+                                {% if billing.type == 'rent' %}
+                                    <span class="badge bg-warning text-dark">
+                                        Арендовано до {{ transaction.expires_at|date('d.m.Y') }}
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-success">Куплено</span>
+                                {% endif %}
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                    <div class="card-footer">
+                        <a class="link-underline link-underline-opacity-0"
+                           href="{{ path('app_course_show', {id: course.id}) }}">Пройти курс</a>
                     </div>
                 </div>
             </div>

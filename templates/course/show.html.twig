@@ -6,11 +6,56 @@
     <h1 class="text-break">{{ course.name }}</h1>
     <p class="text-break">{{ course.description }}</p>
 
+    {% if app.user and billingCourse and billingCourse.type != 'free' %}
+        <div class="mb-3">
+            {% if userTransaction %}
+                {% if billingCourse.type == 'rent' %}
+                    <span class="badge bg-warning text-dark fs-6">
+                        Арендовано до {{ userTransaction.expires_at|date('d.m.Y H:i', 'Europe/Moscow') }}
+                    </span>
+                {% else %}
+                    <span class="badge bg-success fs-6">Курс куплен</span>
+                {% endif %}
+            {% else %}
+                <button type="button"
+                        class="btn btn-primary"
+                        data-bs-toggle="modal"
+                        data-bs-target="#payModal"
+                        {% if balance is not null and balance < billingCourse.price %}disabled{% endif %}>
+                    {% if billingCourse.type == 'rent' %}Арендовать{% else %}Купить{% endif %}
+                    за {{ billingCourse.price }} ₽
+                </button>
+
+                <div class="modal fade" id="payModal" tabindex="-1" aria-labelledby="payModalLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="payModalLabel">Подтверждение оплаты</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                            </div>
+                            <div class="modal-body">
+                                Списать <strong>{{ billingCourse.price }} ₽</strong>
+                                за курс «{{ course.name }}»?
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                                <a href="{{ path('app_course_pay', {id: course.id}) }}" class="btn btn-primary">
+                                    Подтвердить
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    {% endif %}
+
     <h2>Уроки</h2>
     <ol>
         {% for lesson in course.lessons %}
             <li>
-                <a class=" text-break link-underline link-underline-opacity-0 fw-bold"  href="{{ path('app_lesson_show', {id: lesson.id}) }}">{{ lesson.name }}</a>
+                <a class="text-break link-underline link-underline-opacity-0 fw-bold"
+                   href="{{ path('app_lesson_show', {id: lesson.id}) }}">{{ lesson.name }}</a>
             </li>
         {% else %}
             <p>Уроков пока нет</p>
