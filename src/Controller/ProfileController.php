@@ -2,8 +2,9 @@
 
 namespace App\Controller;
 
-use App\Service\BillingClient;
 use App\Exception\BillingUnavailableException;
+use App\Repository\CourseRepository;
+use App\Service\BillingClient;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -15,20 +16,45 @@ final class ProfileController extends AbstractController
     #[IsGranted('ROLE_USER')]
     public function index(BillingClient $billingClient): Response
     {
-        $user = $this->getUser();
-        $balance = null;
+        $billingUser = null;
 
         try {
-            $response = $billingClient->getCurrentUser($user->getApiToken());
-        } catch (BillingUnavailableException $e) {
-            $this->addFlash('error', 'Сервис сейчас не доступен.');
+            $billingUser = $billingClient->getCurrentUser($this->getUser()->getApiToken());
+        } catch (BillingUnavailableException) {
+            $this->addFlash('error', 'Сервис временно недоступен');
         }
 
-        $role = in_array('ROLE_SUPER_ADMIN', $response['roles'], true) ? "Администратор" : "Пользователь";
         return $this->render('profile/index.html.twig', [
-            'email'   => $user->getEmail(),
-            'role'    => $role,
-            'balance' => $response['balance'],
+            'email' => $this->getUser()->getEmail(),
+            'role' =>
+                in_array('ROLE_SUPER_ADMIN', $billingUser['roles'] ?? [], true) ? 'Администратор' : 'Пользователь',
+            'balance' => $billingUser['balance'] ?? null,
+        ]);
+    }
+
+    #[Route('/profile/transactions', name: 'app_profile_transactions', methods: ['GET'])]
+    #[IsGranted('ROLE_USER')]
+    public function transactions(BillingClient $billingClient, CourseRepository $courseRepository): Response
+    {
+        $transactions = [];
+
+        try {
+            $rawTransactions = $billingClient->getTransactions($this->getUser()->getApiToken());
+
+            for ($i = 0, $iMax = count($rawTransactions); $i < $iMax; $i++) {
+                if (!empty($rawTransactions[$i]['course_code'])) {
+                    $course = $courseRepository->findOneBy(['code' => $rawTransactions[$i]['course_code']]);
+                    $rawTransactions[$i]['course_id'] = $course?->getId();
+                }
+            }
+
+            $transactions = $rawTransactions;
+        } catch (BillingUnavailableException) {
+            $this->addFlash('error', 'Сервис временно недоступен');
+        }
+
+        return $this->render('profile/transactions.html.twig', [
+            'transactions' => $transactions,
         ]);
     }
 }

@@ -3,18 +3,25 @@
 namespace App\Controller;
 
 use App\Entity\Lesson;
+use App\Exception\BillingUnavailableException;
 use App\Form\LessonType;
 use App\Repository\CourseRepository;
+use App\Service\BillingClient;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/lessons')]
 final class LessonController extends AbstractController
 {
+    public function __construct(private BillingClient $billingClient)
+    {
+    }
+
     #[Route('/new', name: 'app_lesson_new', methods: ['GET', 'POST'])]
     #[IsGranted('ROLE_SUPER_ADMIN')]
     public function new(
@@ -57,6 +64,34 @@ final class LessonController extends AbstractController
     #[IsGranted('ROLE_USER')]
     public function show(Lesson $lesson): Response
     {
+        $course = $lesson->getCourse();
+
+        try {
+            $billingCourse = $this->billingClient->getCourse($course->getCode());
+
+            if (($billingCourse['type'] ?? 'free') !== 'free') {
+                $transactions = $this->billingClient->getTransactions(
+                    $this->getUser()->getApiToken(),
+                    [
+                        'filter' => [
+                            'type' => 'payment',
+                            'course_code' => $course->getCode(),
+                            'skip_expired' => true,
+                        ]
+                    ]
+                );
+
+                if (empty($transactions)) {
+                    throw new AccessDeniedException('Курс не оплачен');
+                }
+            }
+        } catch (AccessDeniedException $e) {
+            throw $e;
+        } catch (BillingUnavailableException) {
+            $this->addFlash('error', 'Сервис временно недоступен');
+            return $this->redirectToRoute('app_course_show', ['id' => $course->getId()]);
+        }
+
         return $this->render('lesson/show.html.twig', [
             'lesson' => $lesson,
         ]);
