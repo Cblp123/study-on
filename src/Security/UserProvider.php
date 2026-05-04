@@ -59,7 +59,7 @@ class UserProvider implements UserProviderInterface, PasswordUpgraderInterface
             throw new UserNotFoundException('Сервис временно недоступен.');
         }
 
-        if ($identifier !== $userData['user_name']) {
+        if ($identifier !== $userData['username']) {
             throw new UserNotFoundException('Токен принадлежит другому пользователю');
         }
 
