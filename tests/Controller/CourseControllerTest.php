@@ -2,6 +2,8 @@
 
 namespace App\Tests\Controller;
 
+use App\Entity\Course;
+
 class CourseControllerTest extends AbstractControllerTest
 {
     // проверка для неавторизованных пользователей
@@ -272,7 +274,11 @@ class CourseControllerTest extends AbstractControllerTest
     public function testAnonymousCannotPayCourse(): void
     {
         $client = static::createClient();
-        $client->request('GET', '/courses/1/pay');
+
+        $em = static::getContainer()->get('doctrine')->getManager();
+        $course = $em->getRepository(Course::class)->findOneBy([]);
+
+        $client->request('GET', '/courses/' . $course->getId() . '/pay');
 
         $this->assertResponseRedirects('/login');
     }
