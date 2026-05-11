@@ -132,4 +132,20 @@ class BillingClient
             token: $token
         );
     }
+
+    /**
+     * @throws BillingUnavailableException
+     */
+    public function createCourse(array $data, string $token): array
+    {
+        return $this->request('POST', '/api/v1/courses', $data, $token);
+    }
+
+    /**
+     * @throws BillingUnavailableException
+     */
+    public function editCourse(string $code, array $data, string $token): array
+    {
+        return $this->request('POST', '/api/v1/courses/' . $code, $data, $token);
+    }
 }

@@ -68,6 +68,21 @@ final class CourseController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            try {
+                $this->billingClient->createCourse([
+                    'code' => $course->getCode(),
+                    'title' => $course->getName(),
+                    'type' => $form->get('type')->getData(),
+                    'price' => $form->get('price')->getData(),
+                ], $this->getUser()->getApiToken());
+            } catch (BillingUnavailableException) {
+                $this->addFlash('error', 'Сервис временно недоступен');
+                return $this->render('course/new.html.twig', [
+                    'course' => $course,
+                    'form' => $form,
+                ]);
+            }
+
             $entityManager->persist($course);
             $entityManager->flush();
 
@@ -148,10 +163,38 @@ final class CourseController extends AbstractController
     #[IsGranted('ROLE_SUPER_ADMIN')]
     public function edit(Request $request, Course $course, EntityManagerInterface $entityManager): Response
     {
-        $form = $this->createForm(CourseType::class, $course);
+        $oldCode = $course->getCode();
+
+        $billingCourse = null;
+        try {
+            $billingCourse = $this->billingClient->getCourse($oldCode);
+        } catch (BillingUnavailableException) {
+            $this->addFlash('error', 'Сервис временно недоступен');
+        }
+
+        $form = $this->createForm(CourseType::class, $course, [
+            'billing_type' => $billingCourse['type']  ?? null,
+            'billing_price' => $billingCourse['price'] ?? null,
+        ]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            try {
+                // обновляем в биллинге 
+                $this->billingClient->editCourse($oldCode, [
+                    'code' => $course->getCode(),
+                    'title' => $course->getName(),
+                    'type' => $form->get('type')->getData(),
+                    'price' => $form->get('price')->getData(),
+                ], $this->getUser()->getApiToken());
+            } catch (BillingUnavailableException) {
+                $this->addFlash('error', 'Сервис временно недоступен');
+                return $this->render('course/edit.html.twig', [
+                    'course' => $course,
+                    'form' => $form,
+                ]);
+            }
+
             $entityManager->flush();
 
             return $this->redirectToRoute('app_course_show', ['id' => $course->getId()], Response::HTTP_SEE_OTHER);
