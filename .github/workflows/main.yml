@@ -26,8 +26,7 @@ jobs:
           docker compose exec -T php composer install --no-interaction --prefer-dist --optimize-autoloader
       - name: Build frontend assets
         run: |
-          docker compose run --rm -u root node yarn install
-          docker compose run --rm -u root node yarn encore dev
+          docker compose run --rm -u root node sh -c 'corepack enable && yarn install && yarn encore dev'
       - name: Run DB setup
         run: |
           docker compose exec -T \
