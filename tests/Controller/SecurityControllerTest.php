@@ -2,8 +2,13 @@
 
 namespace App\Tests\Controller;
 
-class SecurityControllerTest extends AbstractControllerTest
+use App\Tests\AuthTrait;
+use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+
+class SecurityControllerTest extends WebTestCase
 {
+    use AuthTrait;
+    
     public function testLoginPageIsAccessible(): void
     {
         $client = static::createClient();

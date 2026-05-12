@@ -3,9 +3,13 @@
 namespace App\Tests\Controller;
 
 use App\Entity\Course;
+use App\Tests\AuthTrait;
+use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
-class CourseControllerTest extends AbstractControllerTest
+class CourseControllerTest extends WebTestCase
 {
+    use AuthTrait;
+    
     // проверка для неавторизованных пользователей
     public function testIndex(): void
     {

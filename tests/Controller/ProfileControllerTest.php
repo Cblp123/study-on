@@ -2,8 +2,13 @@
 
 namespace App\Tests\Controller;
 
-class ProfileControllerTest extends AbstractControllerTest
+use App\Tests\AuthTrait;
+use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+
+class ProfileControllerTest extends WebTestCase
 {
+    use AuthTrait;
+    
     public function testAnonymousCannotViewProfile(): void
     {
         $client = static::createClient();

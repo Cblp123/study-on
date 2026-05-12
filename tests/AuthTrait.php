@@ -1,11 +1,10 @@
 <?php
 
-namespace App\Tests\Controller;
+namespace App\Tests;
 
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
-use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
-abstract class AbstractControllerTest extends WebTestCase
+trait AuthTrait 
 {
     protected function loginAs(KernelBrowser $client, string $email, string $password): void
     {

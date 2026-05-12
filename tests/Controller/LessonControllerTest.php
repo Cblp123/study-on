@@ -2,8 +2,12 @@
 
 namespace App\Tests\Controller;
 
-class LessonControllerTest extends AbstractControllerTest
+use App\Tests\AuthTrait;
+use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+
+class LessonControllerTest extends WebTestCase
 {
+    use AuthTrait;
 
     // проверка для неавторизованных пользователей
     public function testAnonymousCannotViewLesson(): void
