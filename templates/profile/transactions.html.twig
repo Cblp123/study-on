@@ -36,10 +36,10 @@
                         </td>
                         <td>{{ t.amount }} ₽</td>
                         <td>
-                            {% if t.course_code is defined and t.course_code %}
+                            {% if t.course_code is defined and t.course_code and t.course_id is defined and t.course_id %}
                                 <a href="{{ path('app_course_show', {id: t['course_id']}) }}">{{ t.course_code }}</a>
-                            {% else %}
-
+                            {% elseif t.course_code is defined and t.course_code %}
+                                {{ t.course_code }}
                             {% endif %}
                         </td>
                         <td>{{ t.created_at|date('d.m.Y H:i', 'Europe/Moscow') }}</td>

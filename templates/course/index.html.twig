@@ -27,7 +27,10 @@
                             {% if transaction %}
                                 {% if billing.type == 'rent' %}
                                     <span class="badge bg-warning text-dark">
-                                        Арендовано до {{ transaction.expires_at is defined and transaction.expires_at|date('d.m.Y') }}
+                                        Арендовано до 
+                                        {% if transaction.expires_at is defined and transaction.expires_at %}
+                                            {{ transaction.expires_at|date('d.m.Y H:i', 'Europe/Moscow') }}
+                                        {% endif %}
                                     </span>
                                 {% else %}
                                     <span class="badge bg-success">Куплено</span>

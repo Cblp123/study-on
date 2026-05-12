@@ -11,7 +11,10 @@
             {% if userTransaction %}
                 {% if billingCourse.type == 'rent' %}
                     <span class="badge bg-warning text-dark fs-6">
-                        Арендовано до {{ userTransaction.expires_at|date('d.m.Y H:i', 'Europe/Moscow') }}
+                        Арендовано до
+                        {% if userTransaction.expires_at is defined and userTransaction.expires_at %}
+                            {{ userTransaction.expires_at|date('d.m.Y H:i', 'Europe/Moscow') }}
+                        {% endif %}
                     </span>
                 {% else %}
                     <span class="badge bg-success fs-6">Курс куплен</span>
