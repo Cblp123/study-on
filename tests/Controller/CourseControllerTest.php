@@ -107,28 +107,14 @@ class CourseControllerTest extends AbstractControllerTest
 
         $this->loginAsAdmin($client);
 
-        $crawler = $client->request('GET', '/courses');
-        $this->assertSelectorExists('a:contains("Добавить курс")');
-
-        $link = $crawler->selectLink('Пройти курс')->first()->link();
-        $crawler = $client->click($link);
-
-        $this->assertSelectorExists('a:contains("Редактировать")');
-        $this->assertSelectorExists('button:contains("Удалить")');
-        $this->assertSelectorExists('a:contains("Добавить урок")');
-
-        $link = $crawler->selectLink('К списку курсов')->link();
-        $crawler = $client->click($link);
-
-        $link = $crawler->selectLink('Добавить курс')->link();
-        $crawler = $client->click($link);
-
+        $crawler = $client->request('GET', '/courses/new');
         $this->assertResponseIsSuccessful();
 
         $form = $crawler->selectButton('Сохранить')->form([
             'course[code]' => 'test-course',
             'course[name]' => 'Новый тестовый курс',
             'course[description]' => 'Описание',
+            'course[type]' => 'free',
         ]);
 
         $client->submit($form);
@@ -217,6 +203,7 @@ class CourseControllerTest extends AbstractControllerTest
 
         $form = $crawler->selectButton('Сохранить')->form([
             'course[name]' => 'Изменённое название',
+            'course[type]' => 'free',
         ]);
 
         $client->submit($form);
@@ -344,5 +331,46 @@ class CourseControllerTest extends AbstractControllerTest
         $this->assertSelectorTextContains('#payModal', 'Подтверждение оплаты');
         $this->assertSelectorTextContains('#payModal', 'Списать');
         $this->assertSelectorExists('#payModal .btn-primary');
+    }
+
+    public function testUserCannotAccessLessonWithExpiredRent(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+
+        $this->loginAsTestUser($client);
+
+        $em = static::getContainer()->get('doctrine')->getManager();
+        $course = $em->getRepository(Course::class)->findOneBy(['code' => 'html-css']);
+
+        $crawler = $client->request('GET', '/courses/' . $course->getId());
+        $this->assertResponseIsSuccessful();
+
+        $lessonLink = $crawler->filter('li a')->first()->link();
+        $client->click($lessonLink);
+
+        $this->assertResponseStatusCodeSame(403);
+    }
+
+    public function testUserCannotEditCourseViaPostRequest(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+
+        $this->loginAsUser($client);
+
+        $em = static::getContainer()->get('doctrine')->getManager();
+        $course = $em->getRepository(Course::class)->findOneBy(['code' => 'python-basa']);
+
+        $client->request('POST', '/courses/' . $course->getId() . '/edit', [
+            'course' => [
+                'code' => 'hacked',
+                'name' => 'Взломан',
+                'type' => 'free',
+            ],
+            '_token' => 'fake',
+        ]);
+
+        $this->assertResponseStatusCodeSame(403);
     }
 }

@@ -80,7 +80,7 @@ final class BillingClientMock extends BillingClient
                     'type' => 'payment',
                     'course_code' => 'html-css',
                     'amount' => '100.00',
-                    'expires_at' => '2026-05-07T12:00:00+00:00',
+                    'expires_at' => '2099-01-01T12:00:00+00:00',
                 ],
             ],
             $this->users[1]['token'] => [
@@ -97,6 +97,21 @@ final class BillingClientMock extends BillingClient
                     'created_at' => '2026-04-20T10:00:00+00:00',
                     'type' => 'deposit',
                     'amount' => '5000.00',
+                ],
+                [
+                    'id' => 7,
+                    'created_at' => '2026-03-01T10:00:00+00:00',
+                    'type' => 'payment',
+                    'course_code' => 'python-basa',
+                    'amount' => '0.00',
+                    'expires_at' => '2026-03-08T10:00:00+00:00',
+                ],
+                [
+                    'id' => 8,
+                    'created_at' => '2026-04-22T10:00:00+00:00',
+                    'type' => 'payment',
+                    'course_code' => 'sql-beginner',
+                    'amount' => '200.00',
                 ],
             ],
         ];
@@ -297,6 +312,43 @@ final class BillingClientMock extends BillingClient
         return [
             'code' => 401,
             'message' => 'Invalid refresh token',
+        ];
+    }
+
+    public function createCourse(array $data, string $token): array
+    {
+        foreach ($this->courses as $course) {
+            if ($course['code'] === $data['code']) {
+                return [
+                    'code' => 400,
+                    'message' => 'Курс с таким кодом уже существует',
+                ];
+            }
+        }
+
+        $this->courses[] = [
+            'code'  => $data['code'],
+            'type'  => $data['type'],
+            'price' => number_format((float) ($data['price'] ?? 0), 2, '.', ''),
+        ];
+
+        return ['success' => true];
+    }
+
+    public function editCourse(string $code, array $data, string $token): array
+    {
+        foreach ($this->courses as &$course) {
+            if ($course['code'] === $code) {
+                $course['code']  = $data['code'];
+                $course['type']  = $data['type'];
+                $course['price'] = number_format((float) ($data['price'] ?? 0), 2, '.', '');
+                return ['success' => true];
+            }
+        }
+
+        return [
+            'code'    => 404,
+            'message' => 'Курс не найден',
         ];
     }
 }
