@@ -24,7 +24,7 @@ jobs:
       - name: Install PHP dependencies
         run: |
           docker compose exec -T php composer install --no-interaction --prefer-dist --optimize-autoloader
-          docker compose cp php:/app/vendor ./vendor
+          sudo docker compose cp php:/app/vendor ./vendor
       - name: Build frontend assets
         run: |
           docker compose run --rm -u root node sh -c 'npm install -g yarn && yarn install && yarn encore dev'
