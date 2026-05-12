@@ -14,20 +14,31 @@ jobs:
           php-version: '8.4'
           extensions: mbstring, xml, ctype, iconv, intl, pdo_pgsql
           tools: composer
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install PHP dependencies on host (for yarn)
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Build frontend assets on host
+        run: |
+          npm install -g yarn
+          yarn install
+          yarn encore dev
+
       - name: Create external network
         run: docker network create study-onbilling_default || true
+
       - name: Start containers
         run: |
           docker compose down -v --remove-orphans || true
           docker compose up -d --build
           docker ps -a
-      - name: Install PHP dependencies
+      - name: Install PHP dependencies inside container
         run: |
           docker compose exec -T php composer install --no-interaction --prefer-dist --optimize-autoloader
-          sudo docker compose cp php:/app/vendor ./vendor
-      - name: Build frontend assets
-        run: |
-          docker compose run --rm -u root node sh -c 'npm install -g yarn && yarn install && yarn encore dev'
       - name: Run DB setup
         run: |
           docker compose exec -T \
