@@ -1,0 +1,45 @@
+name: CI
+on:
+  push:
+    branches: [ "master" ]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup PHP (only for tooling)
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, xml, ctype, iconv, intl, pdo_pgsql
+          tools: composer
+      - name: Create external network
+        run: docker network create study-onbilling_default || true
+      - name: Start containers
+        run: |
+          docker compose down -v --remove-orphans || true
+          docker compose up -d --build
+          docker ps -a
+      - name: Install PHP dependencies
+        run: |
+          docker compose exec -T php composer install --no-interaction --prefer-dist --optimize-autoloader
+      - name: Build frontend assets
+        run: |
+          docker compose run --rm -u root node yarn install
+          docker compose run --rm -u root node yarn encore dev
+      - name: Run DB setup
+        run: |
+          docker compose exec -T \
+            -e DATABASE_URL=pgsql://pguser:pguser@postgres:5432/study_on \
+            php sh -c '
+              php bin/console doctrine:database:drop --force --env=test || true &&
+              php bin/console doctrine:database:create --env=test &&
+              php bin/console doctrine:migrations:migrate -n --env=test &&
+              php bin/console doctrine:fixtures:load -n --env=test
+            '
+      - name: Run tests
+        run: |
+          docker compose exec -T \
+            -e DATABASE_URL=pgsql://pguser:pguser@postgres:5432/study_on \
+            php php bin/phpunit
